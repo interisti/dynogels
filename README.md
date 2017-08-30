@@ -362,7 +362,7 @@ Account.update({email: 'foo@example.com', name: 'Bar Tester'}, {ReturnValues: 'A
   console.log('update account', acc.get('name')); // prints the old account name
 });
 
-// Only update the account if the current age of the account is 21
+// Only update the account if the current age of the account is 22
 Account.update({email: 'foo@example.com', name: 'Bar Tester'}, {expected: {age: 22}}, function (err, acc) {
   console.log('update account', acc.get('name'));
 });
@@ -674,6 +674,18 @@ BlogPost
   .where('title').gte('Expanding')
   .exec();
 
+// attribute doesn't exist
+BlogPost
+  .query('werner@example.com')
+  .where('title').null()
+  .exec();
+
+// attribute exists
+BlogPost
+  .query('werner@example.com')
+  .where('title').exists()
+  .exec();
+
 BlogPost
   .query('werner@example.com')
   .where('title').beginsWith('Expanding')
@@ -787,7 +799,7 @@ First, define a model using a local secondary index
 ```js
 var BlogPost = dynogels.define('Account', {
   hashKey : 'email',
-  rangekey : 'title',
+  rangeKey : 'title',
   schema : {
     email             : Joi.string().email(),
     title             : Joi.string(),
@@ -796,7 +808,7 @@ var BlogPost = dynogels.define('Account', {
   },
 
   indexes : [{
-    hashkey : 'email', rangekey : 'PublishedDateTime', type : 'local', name : 'PublishedIndex'
+    hashKey : 'email', rangeKey : 'PublishedDateTime', type : 'local', name : 'PublishedIndex'
   }]
 });
 ```
@@ -1092,21 +1104,28 @@ var Event = dynogels.define('Event', {
 ```
 
 ### Logging
-Logging can be enabled to provide detailed information on data being sent and returned from DynamoDB.
-By default logging is turned off.
+A logger that implements `info` and `warn` methods (e.g [Bunyan](https://www.npmjs.com/package/bunyan) or [Winston](https://www.npmjs.com/package/winston))
+can be provided to either dynogels itself or individual models:
 
 ```js
-dynogels.log.level('info'); // enabled INFO log level
+const logger = require('winston');
+logger.level = 'warn';
+
+dynogels.log = logger;  // enabled WARN log level on all tables
 ```
 
-Logging can also be enabled / disabled at the model level.
 
 ```js
-var Account = dynogels.define('Account', {hashKey : 'email'});
-var Event = dynogels.define('Account', {hashKey : 'name'});
+const accountLogger = require('winston');
+accountLogger.level = 'info';
 
-Account.log.level('warn'); // enable WARN log level for Account model operations
+var Account = dynogels.define('Account', {
+  hashKey: 'email',
+  log: accountLogger
+}); // INFO level on account table
 ```
+
+* [Bunyan log levels](https://github.com/trentm/node-bunyan#levels)
 
 ## Examples
 
